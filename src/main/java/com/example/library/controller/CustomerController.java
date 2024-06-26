@@ -46,7 +46,7 @@ public class CustomerController {
     @Operation(summary = "Get customer by ID", description = "Retrieve a specific customer by their ID")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Successfully retrieved customer",
-                    content = @Content(schema = @Schema(implementation = Customer.class))),
+            content = @Content(schema = @Schema(implementation = Customer.class))),
             @ApiResponse(responseCode = "404", description = "Customer not found")
     })
     @GetMapping(value = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE)

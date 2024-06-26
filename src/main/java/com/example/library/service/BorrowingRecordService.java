@@ -1,5 +1,9 @@
 package com.example.library.service;
 
+import com.example.library.exception.BookAlreadyBorrowedException;
+import com.example.library.exception.BookNotFoundException;
+import com.example.library.exception.BorrowingRecordAlreadyExistsException;
+import com.example.library.exception.CustomerNotFoundException;
 import com.example.library.model.Book;
 import com.example.library.model.BorrowingRecord;
 import com.example.library.model.Customer;
@@ -12,6 +16,7 @@ import jakarta.validation.ConstraintViolationException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -38,18 +43,21 @@ public class BorrowingRecordService {
         try {
             Optional<Customer> customer = customerRepository.findById(borrowingRecord.getCustomer().getId());
             if (customer.isEmpty()) {
-                throw new RuntimeException("Customer does not exist");
+                throw new CustomerNotFoundException("Customer does not exist");
             }
 
             Optional<Book> book = bookRepository.findById(borrowingRecord.getBook().getId());
             if (book.isEmpty()) {
-                throw new RuntimeException("Book does not exist");
+                throw new BookNotFoundException("Book does not exist");
+            }
+            if (!book.get().isAvailable()) {
+                throw new BookAlreadyBorrowedException("Book is already borrowed");
             }
 
             Optional<BorrowingRecord> existingRecord = borrowingRecordRepository.findByCustomerAndBookAndBorrowDate(
                     customer.get(), book.get(), borrowingRecord.getBorrowDate());
             if (existingRecord.isPresent()) {
-                throw new RuntimeException("Borrowing record with the same customer, book, and borrow date already exists");
+                throw new BorrowingRecordAlreadyExistsException("Borrowing record with the same customer, book, and borrow date already exists");
             }
             book.get().setAvailable(false);
             borrowingRecord.setCustomer(customer.get());
@@ -80,14 +88,24 @@ public class BorrowingRecordService {
         });
     }
 
+    @Transactional
     public boolean deleteBorrowingRecord(Long id) {
         if (borrowingRecordRepository.existsById(id)) {
+            BorrowingRecord borrowingRecord = borrowingRecordRepository.findById(id)
+                    .orElseThrow(() -> new IllegalArgumentException("Borrowing record not found"));
+
+            if (borrowingRecord.getReturnDate().isAfter(LocalDate.now())) {
+                throw new IllegalArgumentException("The return date is still in the future, and the borrowing record cannot be deleted.");
+            }
+
             borrowingRecordRepository.deleteById(id);
             return true;
         } else {
             return false;
         }
     }
+
+
 
     public List<BorrowingRecord> findBorrowingRecordsByUserId(Long userId) {
         return borrowingRecordRepository.findByCustomerId(userId);

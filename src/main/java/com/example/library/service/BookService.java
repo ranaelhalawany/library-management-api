@@ -62,12 +62,16 @@ public class BookService {
     public boolean deleteBook(Long id) {
         return bookRepository.findById(id)
                 .map(book -> {
+                    if (!book.isAvailable()) {
+                        throw new IllegalArgumentException("The book is currently borrowed and cannot be deleted.");
+                    }
                     eventPublisher.publishEvent(new BookDeleteEvent(this, book));
                     bookRepository.delete(book);
                     return true;
                 })
                 .orElse(false);
     }
+
 
     public List<Book> searchBooksByTitle(String title) {
         return bookRepository.findByTitleContaining(title);

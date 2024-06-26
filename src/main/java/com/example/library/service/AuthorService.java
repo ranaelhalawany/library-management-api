@@ -55,7 +55,7 @@ public class AuthorService {
         }).orElse(false);
     }
 
-    private LocalDate parseAndEditBirthdate(String birthdateStr) {
+    LocalDate parseAndEditBirthdate(String birthdateStr) {
         try {
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
             LocalDate birthdate = LocalDate.parse(birthdateStr, formatter);
